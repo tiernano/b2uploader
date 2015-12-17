@@ -57,8 +57,18 @@ namespace B2Uploader
                     {
                         if (x.fileName == fileName)
                         {
-                            found = true;
-                            break;
+                            //check the file size
+                            System.IO.FileInfo fi = new System.IO.FileInfo(s);
+                            if (fi.Length == x.size)
+                            {
+                                found = true;
+                                break;
+                            }
+                            else
+                            {
+                                //delete old file? could just be an older version... going to upload again...
+                                break;
+                            }
                         }
                     }
                     if (found)
