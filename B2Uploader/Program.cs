@@ -1,4 +1,5 @@
 ﻿using B2Classes;
+using CommandLine;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,35 +12,50 @@ using System.Threading.Tasks;
 
 namespace B2Uploader
 {
+    class CmdLineOptions
+    {
+        [Option('i', "accountid", HelpText = "Account ID", Required=true)]
+        public string AccountId { get; set; }
+
+        [Option('a', "appkey", HelpText = "Application Key", Required=true)]
+        public string ApplicationKey { get; set; }
+
+        [Option('d', "directory", HelpText="Directory you want to upload", Required=true)]
+        public string Directory {get;set;}
+
+        [Option('v', "verbose", HelpText="Verbose Output")]
+        public bool Verbose{get;set;}
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            if(args.Count() != 3)
-            {
-                Console.WriteLine("Need accountID, AppKey and Folder to upload");
-                return;
-            }
+            var result = CommandLine.Parser.Default.ParseArguments<CmdLineOptions>(args);
 
-            if (!Directory.Exists(args[2]))
-            {
-                Console.WriteLine("Directory to upload MUST EXIST!");
-                return;
-            }
+            var existCode = result.MapResult(options => {
+                if (!Directory.Exists(options.Directory))
+                {
+                    Console.WriteLine("Directory to upload MUST EXIST!");
+                    return 0;
+                }
 
-            var auth = AuthorizeUser(args[0], args[1]);
-            var buckets = ListBuckets(new ListBucketsRequest() { accountId = auth.accountId }, auth.authorizationToken, auth.apiUrl);
+                var auth = AuthorizeUser(options.AccountId, options.ApplicationKey);
+                var buckets = ListBuckets(new ListBucketsRequest() { accountId = auth.accountId }, auth.authorizationToken, auth.apiUrl);
 
-            var bucket = buckets.buckets.First();
+                var bucket = buckets.buckets.First();
 
-            foreach(string s in Directory.GetFiles(args[2]))
-            {
-                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
-                var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
-            }
-
-
-
+                foreach(string s in Directory.GetFiles(options.Directory))
+                {
+                    var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
+                    var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
+                }
+                return 1;
+            },
+            errors =>{
+                Console.WriteLine(errors);
+                return 1;
+            });
         }
 
         static AuthorizeResponse AuthorizeUser(string accountId, string applicationKey)
