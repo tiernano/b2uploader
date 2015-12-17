@@ -45,7 +45,9 @@ namespace B2Uploader
 
                 var bucket = buckets.buckets.First();
 
-                foreach(string s in Directory.GetFiles(options.Directory))
+                string[] FilesToProcess = Directory.GetFiles(options.Directory);
+
+                Parallel.ForEach(FilesToProcess, s =>
                 {
                     //check if file already exists
 
@@ -73,14 +75,14 @@ namespace B2Uploader
                     }
                     if (found)
                     {
-                        Console.WriteLine("File exists already, skipping");
-                        continue;
+                        Console.WriteLine("File {0} exists already, skipping", fileName);
                     }
-
-
-                    var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
-                    var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
-                }
+                    else
+                    {
+                        var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
+                        var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
+                    }
+                });
                 return 1;
             },
             errors =>{
