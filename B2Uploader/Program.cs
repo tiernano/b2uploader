@@ -33,7 +33,7 @@ namespace B2Uploader
 
             foreach(string s in Directory.GetFiles(args[2]))
             {
-                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.authorizationToken, auth.apiUrl);
+                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
                 var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
             }
 
@@ -96,11 +96,10 @@ namespace B2Uploader
 
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
-            SHA1 sha = SHA1.Create();
 
             byte[] bytes = File.ReadAllBytes(filePath);
 
-            String sha1 = ASCIIEncoding.ASCII.GetString(sha.ComputeHash(bytes));
+            String sha1 = GetSha1(bytes);
             
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(uploadUrl);
             webRequest.Method = "POST";
@@ -127,6 +126,22 @@ namespace B2Uploader
             {
                 //something went wrong!
                 return null;
+            }
+        }
+
+        private static string GetSha1(byte[] bytes)
+        {
+            using (SHA1Managed sha1 = new SHA1Managed())
+            {
+                var hash = sha1.ComputeHash(bytes);
+                var sb = new StringBuilder(hash.Length * 2);
+
+                foreach (byte b in hash)
+                {
+                    // can be "x2" if you want lowercase
+                    sb.Append(b.ToString("X2"));
+                }
+                return sb.ToString();
             }
         }
     }
