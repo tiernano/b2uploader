@@ -47,6 +47,27 @@ namespace B2Uploader
 
                 foreach(string s in Directory.GetFiles(options.Directory))
                 {
+                    //check if file already exists
+
+                    string fileName = s.Replace('\\', '_');
+
+                    var existingFiles = ListFileNames(new ListFileNamesRequest() { bucketId = bucket.bucketId, startFileName = fileName }, auth.apiUrl, auth.authorizationToken);
+                    bool found = false;
+                    foreach (var x in existingFiles.files)
+                    {
+                        if (x.fileName == fileName)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                    {
+                        Console.WriteLine("File exists already, skipping");
+                        continue;
+                    }
+
+
                     var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
                     var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
                 }
@@ -114,7 +135,7 @@ namespace B2Uploader
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
 
-            byte[] bytes = File.ReadAllBytes(filePath);
+            byte[] bytes = System.IO.File.ReadAllBytes(filePath);
 
             String sha1 = GetSha1(bytes);
             
@@ -144,6 +165,27 @@ namespace B2Uploader
                 //something went wrong!
                 return null;
             }
+        }
+
+        static ListFileNamesResponse ListFileNames(ListFileNamesRequest request, string apiUrl, string authToken)
+        {
+            
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(apiUrl + "/b2api/v1/b2_list_file_names");
+            string body = JsonConvert.SerializeObject(request);
+            var data = Encoding.UTF8.GetBytes(body);
+            webRequest.Method = "POST";
+            webRequest.Headers.Add("Authorization", authToken);
+            webRequest.ContentType = "application/json; charset=utf-8";
+            webRequest.ContentLength = data.Length;
+            using (var stream = webRequest.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+                stream.Close();
+            }
+            WebResponse response = (HttpWebResponse)webRequest.GetResponse();
+            var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+            response.Close();
+            return JsonConvert.DeserializeObject<ListFileNamesResponse>(responseString);
         }
 
         private static string GetSha1(byte[] bytes)

@@ -75,4 +75,26 @@ namespace B2Classes
         public string contentType { get; set; }
         public FileInfo fileInfo { get; set; }
     }
+
+    public class ListFileNamesRequest
+    {
+        public string bucketId { get; set; }
+        public string startFileName { get; set; }
+        public int maxFileCount { get; set; }
+    }
+
+    public class File
+    {
+        public string action { get; set; }
+        public string fileId { get; set; }
+        public string fileName { get; set; }
+        public int size { get; set; }
+        public object uploadTimestamp { get; set; }
+    }
+
+    public class ListFileNamesResponse 
+    {
+        public List<File> files { get; set; }
+        public string nextFileName { get; set; }
+    }
 }
