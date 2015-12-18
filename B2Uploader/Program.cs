@@ -167,39 +167,48 @@ namespace B2Uploader
 
         static string MakeWebRequest<T>(string url, List<Tuple<string,string>> headers, T item, string contentType = "application/json; charset=utf-8")
         {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-            byte[] data;
-
-            if (typeof(T) == typeof(byte[]))
+            try
             {
-                data = (byte[])(object) item;
-            }
-            else {
-                string body = JsonConvert.SerializeObject(item);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                byte[] data;
 
-                data = Encoding.UTF8.GetBytes(body);
-            }
-            
-            req.Method = "POST";
+                if (typeof(T) == typeof(byte[]))
+                {
+                    data = (byte[])(object)item;
+                }
+                else
+                {
+                    string body = JsonConvert.SerializeObject(item);
 
-            foreach(var head in headers)
+                    data = Encoding.UTF8.GetBytes(body);
+                }
+
+                req.Method = "POST";
+
+                foreach (var head in headers)
+                {
+                    req.Headers.Add(head.Item1, head.Item2);
+                }
+
+                req.ContentType = contentType;
+                req.ContentLength = data.Length;
+                using (var stream = req.GetRequestStream())
+                {
+                    stream.Write(data, 0, data.Length);
+                    stream.Close();
+                }
+                WebResponse response = (HttpWebResponse)req.GetResponse();
+                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                response.Close();
+
+                return responseString;
+            }
+            catch (Exception ex)
             {
-                req.Headers.Add(head.Item1, head.Item2);
+                Console.WriteLine("Error talking to server: {0}", ex.Message);
+                Console.WriteLine("URL: {0}", url);
+                throw;
             }
-
-            req.ContentType = contentType;
-            req.ContentLength = data.Length;
-            using (var stream = req.GetRequestStream())
-            {
-                stream.Write(data, 0, data.Length);
-                stream.Close();
-            }
-            WebResponse response = (HttpWebResponse)req.GetResponse();
-            var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-            response.Close();
-
-            return responseString;
-
 
 
         }
