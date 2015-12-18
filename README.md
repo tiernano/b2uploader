@@ -22,3 +22,7 @@ where accountid and appkey are gotten from BackBlaze's site, and the directory i
 ##What have i used it for?
 
 The app uses multiple threads to do uploads. I am running on a machine in the house with 2 8 core Xeons and 64Gb ram. With this, it kicks of something like 64 threads (the test folder only had 48 files, so all started uploading immediatly!). 
+
+##Comments?
+
+* [Post on Reddit](https://www.reddit.com/r/DataHoarder/comments/3xbx6y/b2_uploader_upload_directories_to_b2/)
