@@ -167,10 +167,12 @@ namespace B2Uploader
 
         static string MakeWebRequest<T>(string url, List<Tuple<string,string>> headers, T item, string contentType = "application/json; charset=utf-8")
         {
+            string body = string.Empty;
+             byte[] data;
             try
             {
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                byte[] data;
+               
 
                 if (typeof(T) == typeof(byte[]))
                 {
@@ -178,7 +180,7 @@ namespace B2Uploader
                 }
                 else
                 {
-                    string body = JsonConvert.SerializeObject(item);
+                    body =  JsonConvert.SerializeObject(item);
 
                     data = Encoding.UTF8.GetBytes(body);
                 }
@@ -207,6 +209,14 @@ namespace B2Uploader
             {
                 Console.WriteLine("Error talking to server: {0}", ex.Message);
                 Console.WriteLine("URL: {0}", url);
+                if (string.IsNullOrWhiteSpace(body))
+                {
+                    Console.WriteLine("Byte array sent in... ");
+                }
+                else
+                {
+                    Console.WriteLine("Body: {0}", body);
+                }
                 throw;
             }
 
