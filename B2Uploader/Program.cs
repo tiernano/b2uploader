@@ -209,14 +209,7 @@ namespace B2Uploader
             {
                 Console.WriteLine("Error talking to server: {0}", ex.Message);
                 Console.WriteLine("URL: {0}", url);
-                if (string.IsNullOrWhiteSpace(body))
-                {
-                    Console.WriteLine("Byte array sent in... ");
-                }
-                else
-                {
-                    Console.WriteLine("Body: {0}", body);
-                }
+                Console.WriteLine("Body: {0}", body);
                 throw;
             }
 
