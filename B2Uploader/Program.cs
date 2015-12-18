@@ -51,7 +51,7 @@ namespace B2Uploader
                 {
                     //check if file already exists
 
-                    string fileName = s.Replace('\\', '/');
+                    string fileName = getValidFilename(s);
 
                     var existingFiles = ListFileNames(new ListFileNamesRequest() { bucketId = bucket.bucketId, startFileName = fileName }, auth.apiUrl, auth.authorizationToken);
                     bool found = false;
@@ -129,6 +129,15 @@ namespace B2Uploader
             
             return JsonConvert.DeserializeObject<GetUploadURLResponse>(responseString);
         }
+        static string getValidFilename(string input)
+        {
+            string fileName = input.Replace('\\', '/');
+            if (fileName.StartsWith("/"))
+            {
+                fileName = fileName.Substring(1);
+            }
+            return fileName;
+        }
 
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
@@ -138,7 +147,9 @@ namespace B2Uploader
 
             var headers = GetAuthHeaders(authToken);
 
-            headers.Add(new Tuple<string, string>("X-Bz-File-Name", filePath.Replace('\\', '/')));
+            string fileName = getValidFilename(filePath);
+
+            headers.Add(new Tuple<string, string>("X-Bz-File-Name", fileName));
             headers.Add(new Tuple<string, string>("X-Bz-Content-Sha1", sha1));
 
             string responseString = MakeWebRequest(uploadUrl, headers, bytes, contentType);
