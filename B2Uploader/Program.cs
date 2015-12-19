@@ -46,8 +46,7 @@ namespace B2Uploader
                 var bucket = buckets.buckets.First();
 
                 string[] FilesToProcess = Directory.GetFiles(options.Directory);
-
-                Parallel.ForEach(FilesToProcess, s =>
+                Parallel.ForEach(FilesToProcess, new ParallelOptions() { MaxDegreeOfParallelism = 32 }, s =>
                 {
                     //check if file already exists
 
@@ -108,7 +107,7 @@ namespace B2Uploader
         {
             var headers = GetAuthHeaders(authToken);
 
-            string responseString = MakeWebRequest(apiUrl + "/b2api/v1/b2_list_buckets", headers, request);
+            string responseString = MakeRequest(apiUrl + "/b2api/v1/b2_list_buckets", headers, JsonConvert.SerializeObject(request));
 
 
             return JsonConvert.DeserializeObject<ListBucketsResponse>(responseString);
@@ -125,7 +124,7 @@ namespace B2Uploader
         {
 
             var headers = GetAuthHeaders(authToken); 
-            string responseString = MakeWebRequest(apiUrl + "/b2api/v1/b2_get_upload_url", headers, request);
+            string responseString = MakeRequest(apiUrl + "/b2api/v1/b2_get_upload_url", headers, JsonConvert.SerializeObject(request));
             
             return JsonConvert.DeserializeObject<GetUploadURLResponse>(responseString);
         }
@@ -141,9 +140,8 @@ namespace B2Uploader
 
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
-
-            byte[] bytes = System.IO.File.ReadAllBytes(filePath);
-            String sha1 = GetSha1(bytes);
+            FileStream fs = System.IO.File.OpenRead(filePath);
+            String sha1 = GetSha1(fs);
 
             var headers = GetAuthHeaders(authToken);
 
@@ -152,7 +150,7 @@ namespace B2Uploader
             headers.Add(new Tuple<string, string>("X-Bz-File-Name", fileName));
             headers.Add(new Tuple<string, string>("X-Bz-Content-Sha1", sha1));
 
-            string responseString = MakeWebRequest(uploadUrl, headers, bytes, contentType);
+            string responseString = MakeRequest(uploadUrl, headers, fs, contentType);
 
             var resp = JsonConvert.DeserializeObject<UploadFileResponse>(responseString);
 
@@ -171,30 +169,23 @@ namespace B2Uploader
         static ListFileNamesResponse ListFileNames(ListFileNamesRequest request, string apiUrl, string authToken)
         {
             var headers = GetAuthHeaders(authToken);
-            string responseString =  MakeWebRequest(apiUrl + "/b2api/v1/b2_list_file_names", headers, request);
+            string responseString =  MakeRequest(apiUrl + "/b2api/v1/b2_list_file_names", headers, JsonConvert.SerializeObject(request));
 
             return JsonConvert.DeserializeObject<ListFileNamesResponse>(responseString);
         }
 
-        static string MakeWebRequest<T>(string url, List<Tuple<string,string>> headers, T item, string contentType = "application/json; charset=utf-8")
+
+        static string MakeRequest(string url, List<Tuple<string,string>> headers, string data, string contentType = "application/json; charset=urf-8")
         {
-            string body = string.Empty;
-             byte[] data;
+            MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
+            return MakeRequest(url, headers, ms, contentType);
+        }
+        
+        static string MakeRequest(string url, List<Tuple<string,string>> headers, Stream data, string contentType="application/json; charset=utf-8")
+        {            
             try
             {
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-               
-
-                if (typeof(T) == typeof(byte[]))
-                {
-                    data = (byte[])(object)item;
-                }
-                else
-                {
-                    body =  JsonConvert.SerializeObject(item);
-
-                    data = Encoding.UTF8.GetBytes(body);
-                }
 
                 req.Method = "POST";
 
@@ -203,11 +194,16 @@ namespace B2Uploader
                     req.Headers.Add(head.Item1, head.Item2);
                 }
 
-                req.ContentType = contentType;
-                req.ContentLength = data.Length;
                 using (var stream = req.GetRequestStream())
                 {
-                    stream.Write(data, 0, data.Length);
+                    
+                    data.Position = 0;
+
+                    req.ContentType = contentType;
+                    
+                    data.CopyTo(stream);
+                    data.Flush();
+                    
                     stream.Close();
                 }
                 WebResponse response = (HttpWebResponse)req.GetResponse();
@@ -220,18 +216,19 @@ namespace B2Uploader
             {
                 Console.WriteLine("Error talking to server: {0}", ex.Message);
                 Console.WriteLine("URL: {0}", url);
-                Console.WriteLine("Body: {0}", body);
                 throw;
             }
-
-
         }
 
-        private static string GetSha1(byte[] bytes)
+        
+        
+        
+
+        private static string GetSha1(Stream inputStream)
         {
             using (SHA1Managed sha1 = new SHA1Managed())
             {
-                var hash = sha1.ComputeHash(bytes);
+                var hash = sha1.ComputeHash(inputStream);
                 var sb = new StringBuilder(hash.Length * 2);
 
                 foreach (byte b in hash)
