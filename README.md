@@ -1,5 +1,6 @@
 # b2uploader
 
+[![Build Status](https://travis-ci.org/tiernano/b2uploader.svg?branch=master)](https://travis-ci.org/tiernano/b2uploader)
 ## What is it?
 
 B2Uploader is a Console app (tested on Windows, may work with Mono or .NET Core on Linux and Mac... need to do some testing) which allows you to upload a folder to [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html). 
