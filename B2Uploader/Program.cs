@@ -1,8 +1,10 @@
 ﻿using B2Classes;
 using CommandLine;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -36,9 +38,12 @@ namespace B2Uploader
 
     class Program
     {
+
+        static Logger logger = LogManager.GetCurrentClassLogger();
         static void Main(string[] args)
         {
             var result = CommandLine.Parser.Default.ParseArguments<CmdLineOptions>(args);
+                      
 
             var existCode = result.MapResult(options => {
                 if (!Directory.Exists(options.Directory))
@@ -47,23 +52,47 @@ namespace B2Uploader
                     return 0;
                 }
 
+                if (options.Verbose)
+                {
+                    logger.Debug("Authorizing User");
+                }
                 var auth = AuthorizeUser(options.AccountId, options.ApplicationKey);
+                if (options.Verbose)
+                {
+                    logger.Debug("Listing Buckets");
+                }
                 var buckets = ListBuckets(new ListBucketsRequest() { accountId = auth.accountId }, auth.authorizationToken, auth.apiUrl);
 
                 var bucket = buckets.buckets.First();
 
+                logger.Debug("Using Bucket Named {0} for uploads", bucket.bucketName);
+
+
                 SearchOption so = SearchOption.TopDirectoryOnly;
                 if (options.recursive)
                 {
+                    if (options.Verbose)
+                    {
+                        logger.Debug("Using Reurisve mode for uploads");
+                    }
                     so = SearchOption.AllDirectories;
                 }
 
                 string[] FilesToProcess = Directory.GetFiles(options.Directory, "*", so);
 
+                if (options.Verbose)
+                {
+                    logger.Debug("Found {0} files to upload", FilesToProcess.Length);
+                }
+
                 int maxParallel = 2;
 
                 if(options.Threads > 2)
                 {
+                    if (options.Verbose)
+                    {
+                        logger.Debug("Mutliple threads for upload: {0}", options.Threads);
+                    }   
                     maxParallel = options.Threads;
                 }
 
@@ -96,7 +125,7 @@ namespace B2Uploader
                     }
                     if (found)
                     {
-                        Console.WriteLine("File {0} exists already, skipping", fileName);
+                       logger.Debug("File {0} exists already, skipping", fileName);
                     }
                     else
                     {
@@ -114,8 +143,8 @@ namespace B2Uploader
                             }
                             catch(Exception ex)
                             {
-                                Console.WriteLine("Uploaded Failed. Retrying");
-                                Console.WriteLine(ex.Message);
+                                logger.Error("Uploaded Failed. Retrying");
+                                logger.Error(ex.Message);
                                 uploaded = false;
                                 retries += 1;
                                 Thread.Sleep(TimeSpan.FromSeconds(30));
@@ -123,7 +152,7 @@ namespace B2Uploader
                         }
                         if (!uploaded)
                         {
-                            Console.WriteLine("Uploaded Failed 3 times... Please retry later!");
+                            logger.Error("Uploaded Failed 3 times... Please retry later!");
                         }
                     }
                 });
@@ -138,7 +167,7 @@ namespace B2Uploader
         static AuthorizeResponse AuthorizeUser(string accountId, string applicationKey)
         {
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create("https://api.backblaze.com/b2api/v1/b2_authorize_account");
-            string credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(accountId + ":" + applicationKey));
+            string credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Format("{0}:{1}", accountId, applicationKey)));
             webRequest.Headers.Add("Authorization", "Basic " + credentials);
             webRequest.ContentType = "application/json; charset=utf-8";
             WebResponse response = (HttpWebResponse)webRequest.GetResponse();
@@ -183,7 +212,9 @@ namespace B2Uploader
 
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
-           String sha1 = GetSha1(filePath);
+            logger.Debug("Starting Uploading {0}", filePath);
+
+            String sha1 = GetSha1(filePath);
 
             var headers = GetAuthHeaders(authToken);
 
@@ -215,7 +246,7 @@ namespace B2Uploader
         static ListFileNamesResponse ListFileNames(ListFileNamesRequest request, string apiUrl, string authToken)
         {
             var headers = GetAuthHeaders(authToken);
-            string responseString =  MakeRequest(apiUrl + "/b2api/v1/b2_list_file_names", headers, JsonConvert.SerializeObject(request));
+            string responseString =  MakeRequest(string.Format("{0}/b2api/v1/b2_list_file_names", apiUrl), headers, JsonConvert.SerializeObject(request));
 
             return JsonConvert.DeserializeObject<ListFileNamesResponse>(responseString);
         }
@@ -228,9 +259,13 @@ namespace B2Uploader
         }
         
         static string MakeRequest(string url, List<Tuple<string,string>> headers, Stream data, string contentType="application/json; charset=utf-8")
-        {            
+        {
+            string reqId = DateTime.Now.Ticks.ToString("X2");
+            Stopwatch st = Stopwatch.StartNew();
             try
             {
+                
+                logger.Debug("Starting RequestID: {0}", reqId);
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
 
                 req.Method = "POST";
@@ -255,13 +290,13 @@ namespace B2Uploader
                 WebResponse response = (HttpWebResponse)req.GetResponse();
                 var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
                 response.Close();
-
+                Console.WriteLine("RequId: {0} MakeRequest Took {1}ms",reqId, st.ElapsedMilliseconds);
                 return responseString;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error talking to server: {0}", ex.Message);
-                Console.WriteLine("URL: {0}", url);
+                logger.Error("ReqId: {1} Error talking to server: {0}", ex.Message, reqId);
+                logger.Error("URL: {0}", url);
                 throw;
             }
         }
