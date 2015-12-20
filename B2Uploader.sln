@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "B2Uploader", "B2Uploader\B2Uploader.csproj", "{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}"
 EndProject
@@ -18,16 +18,26 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		Releasex64|Any CPU = Releasex64|Any CPU
+		Releasex86|Any CPU = Releasex86|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Releasex64|Any CPU.ActiveCfg = Releasex64|Any CPU
+		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Releasex64|Any CPU.Build.0 = Releasex64|Any CPU
+		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Releasex86|Any CPU.ActiveCfg = Releasex86|Any CPU
+		{A5D41169-C2EE-4B5E-A2D8-B63E485597A6}.Releasex86|Any CPU.Build.0 = Releasex86|Any CPU
 		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Releasex64|Any CPU.ActiveCfg = Releasex64|Any CPU
+		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Releasex64|Any CPU.Build.0 = Releasex64|Any CPU
+		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Releasex86|Any CPU.ActiveCfg = Releasex86|Any CPU
+		{603F71B3-F819-4E4E-8A0E-738CAC305E8F}.Releasex86|Any CPU.Build.0 = Releasex86|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
