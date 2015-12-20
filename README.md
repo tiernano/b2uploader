@@ -15,8 +15,9 @@ where accountid and appkey are gotten from BackBlaze's site, and the directory i
 
 ##Known issues
 
-* very little logging or details of what is going on
-* no error handing (currently crashes with VERY large files and multithreading).
+* ~~very little logging or details of what is going on~~ fixed (mostly)
+* ~~no error handing (currently crashes with VERY large files and multithreading).~~ also fixed
+* Cant currently change bucket (picks the first one, known bug[#4](https://github.com/tiernano/b2uploader/issues/4)
 * probably a lot of other stuff... leave issues please!
 
 
