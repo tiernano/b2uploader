@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace B2Uploader
@@ -79,8 +80,31 @@ namespace B2Uploader
                     }
                     else
                     {
-                        var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
-                        var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
+                        bool uploaded = false;
+                        int retries = 0;
+                        while (!uploaded && retries < 3)
+                        {
+                            try {
+                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
+                                var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
+                                if(response != null)
+                                {
+                                    uploaded = true;
+                                }
+                            }
+                            catch(Exception ex)
+                            {
+                                Console.WriteLine("Uploaded Failed. Retrying");
+                                Console.WriteLine(ex.Message);
+                                uploaded = false;
+                                retries += 1;
+                                Thread.Sleep(TimeSpan.FromSeconds(30));
+                            }
+                        }
+                        if (!uploaded)
+                        {
+                            Console.WriteLine("Uploaded Failed 3 times... Please retry later!");
+                        }
                     }
                 });
                 return 1;
@@ -108,7 +132,6 @@ namespace B2Uploader
             var headers = GetAuthHeaders(authToken);
 
             string responseString = MakeRequest(apiUrl + "/b2api/v1/b2_list_buckets", headers, JsonConvert.SerializeObject(request));
-
 
             return JsonConvert.DeserializeObject<ListBucketsResponse>(responseString);
         }
@@ -140,8 +163,7 @@ namespace B2Uploader
 
         static UploadFileResponse UploadFile(string authToken, string contentType, string filePath, string uploadUrl)
         {
-            FileStream fs = System.IO.File.OpenRead(filePath);
-            String sha1 = GetSha1(fs);
+           String sha1 = GetSha1(filePath);
 
             var headers = GetAuthHeaders(authToken);
 
@@ -150,19 +172,23 @@ namespace B2Uploader
             headers.Add(new Tuple<string, string>("X-Bz-File-Name", fileName));
             headers.Add(new Tuple<string, string>("X-Bz-Content-Sha1", sha1));
 
-            string responseString = MakeRequest(uploadUrl, headers, fs, contentType);
-
-            var resp = JsonConvert.DeserializeObject<UploadFileResponse>(responseString);
-
-            if(resp.contentSha1 == sha1)
+            using (FileStream fs = System.IO.File.OpenRead(filePath))
             {
-                Console.WriteLine(responseString);
-                return resp;
-            }
-            else
-            {
-                //something went wrong!
-                return null;
+
+                string responseString = MakeRequest(uploadUrl, headers, fs, contentType);
+
+                var resp = JsonConvert.DeserializeObject<UploadFileResponse>(responseString);
+
+                if (resp.contentSha1 == sha1)
+                {
+                    Console.WriteLine(responseString);
+                    return resp;
+                }
+                else
+                {
+                    //something went wrong!
+                    return null;
+                }
             }
         }
 
@@ -224,19 +250,22 @@ namespace B2Uploader
         
         
 
-        private static string GetSha1(Stream inputStream)
+        private static string GetSha1(string fileName)
         {
             using (SHA1Managed sha1 = new SHA1Managed())
             {
-                var hash = sha1.ComputeHash(inputStream);
-                var sb = new StringBuilder(hash.Length * 2);
-
-                foreach (byte b in hash)
+                using (FileStream fs = System.IO.File.OpenRead(fileName))
                 {
-                    // can be "x2" if you want lowercase
-                    sb.Append(b.ToString("X2"));
+                    var hash = sha1.ComputeHash(fs);
+                    var sb = new StringBuilder(hash.Length * 2);
+
+                    foreach (byte b in hash)
+                    {
+                        // can be "x2" if you want lowercase
+                        sb.Append(b.ToString("X2"));
+                    }
+                    return sb.ToString();
                 }
-                return sb.ToString();
             }
         }
     }
