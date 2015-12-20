@@ -23,6 +23,12 @@ namespace B2Uploader
 
         [Option('d', "directory", HelpText = "Directory you want to upload", Required = true)]
         public string Directory { get; set; }
+
+        [Option('m', "multithreads", HelpText = "Number of uploads you want to use at a time. Default is 2", Required = false)]
+        public int Threads { get; set; }
+
+        [Option('r', "recursive", HelpText = "Uploads the directory in Recursive mode. Any sub folders will also be uploaded", Required = false)]
+        public bool recursive { get; set; }
         
         [Option('v', "verbose", HelpText="Verbose Output")]
         public bool Verbose{get;set;}
@@ -46,8 +52,22 @@ namespace B2Uploader
 
                 var bucket = buckets.buckets.First();
 
-                string[] FilesToProcess = Directory.GetFiles(options.Directory);
-                Parallel.ForEach(FilesToProcess, new ParallelOptions() { MaxDegreeOfParallelism = 32 }, s =>
+                SearchOption so = SearchOption.TopDirectoryOnly;
+                if (options.recursive)
+                {
+                    so = SearchOption.AllDirectories;
+                }
+
+                string[] FilesToProcess = Directory.GetFiles(options.Directory, "*", so);
+
+                int maxParallel = 2;
+
+                if(options.Threads > 2)
+                {
+                    maxParallel = options.Threads;
+                }
+
+                Parallel.ForEach(FilesToProcess, new ParallelOptions() { MaxDegreeOfParallelism = maxParallel }, s =>
                 {
                     //check if file already exists
 
