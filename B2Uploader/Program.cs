@@ -87,7 +87,7 @@ namespace B2Uploader
 
                 int maxParallel = 2;
 
-                if(options.Threads > 2)
+                if(options.Threads > 0)
                 {
                     if (options.Verbose)
                     {
