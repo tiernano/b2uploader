@@ -252,23 +252,24 @@ namespace B2Uploader
         static async Task<string> MakeRequest2(string url, List<Tuple<string, string>> headers, string data, bool isFile = false, string contentType = "application/json; charset=utf-8")
         {
             var client = new HttpClient();
-            
-            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, url);
+           
             foreach (var head in headers)
             {
-                message.Headers.Add(head.Item1, head.Item2);
+                client.DefaultRequestHeaders.Add(head.Item1, head.Item2);
             }
+
+            HttpContent content = null;
             if (isFile)
             {
-                message.Content = new StreamContent(System.IO.File.OpenRead(data));
+                content = new StreamContent(System.IO.File.OpenRead(data));
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
             }
             else
             {
-                message.Content = new StringContent(data);
+                content = new StringContent(data);
             }
-
-            var resp = await client.SendAsync(message);
-
+            var resp = await client.PostAsync(url, content);
+            
             resp.EnsureSuccessStatusCode();
             return await resp.Content.ReadAsStringAsync();          
         }
