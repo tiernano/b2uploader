@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -43,7 +44,7 @@ namespace B2Uploader
         static void Main(string[] args)
         {
             var result = CommandLine.Parser.Default.ParseArguments<CmdLineOptions>(args);
-
+                      
             logger.Debug("Starting B2Uploader Version: {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
             var existCode = result.MapResult(options => {
@@ -63,7 +64,7 @@ namespace B2Uploader
                 {
                     logger.Debug("Listing Buckets");
                 }
-                var buckets = ListBuckets(new ListBucketsRequest() { accountId = auth.accountId }, auth.authorizationToken, auth.apiUrl);
+                var buckets = ListBuckets(new ListBucketsRequest() { accountId = auth.accountId }, auth.authorizationToken, auth.apiUrl).Result;
 
                 var bucket = buckets.buckets.First();
 
@@ -136,7 +137,7 @@ namespace B2Uploader
                         while (!uploaded && retries < 3)
                         {
                             try {
-                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
+                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken).Result;
                                 var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
                                 if(response != null)
                                 {
@@ -178,13 +179,13 @@ namespace B2Uploader
             return JsonConvert.DeserializeObject<AuthorizeResponse>(responseString);
         }
 
-        static ListBucketsResponse ListBuckets(ListBucketsRequest request, string authToken, string apiUrl)
+        static async Task<ListBucketsResponse> ListBuckets(ListBucketsRequest request, string authToken, string apiUrl)
         {
             var headers = GetAuthHeaders(authToken);
 
-            string responseString = MakeRequest(apiUrl + "/b2api/v1/b2_list_buckets", headers, JsonConvert.SerializeObject(request));
+            string responseString = await MakeRequest2(apiUrl + "/b2api/v1/b2_list_buckets", headers, JsonConvert.SerializeObject(request));
 
-            return JsonConvert.DeserializeObject<ListBucketsResponse>(responseString);
+            return  await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<ListBucketsResponse>(responseString));
         }
 
         static List<Tuple<string,string>> GetAuthHeaders(string authToken)
@@ -194,13 +195,12 @@ namespace B2Uploader
             return headers;
         }
 
-        static GetUploadURLResponse GetUploadURL(GetUploadURLRequest request, string apiUrl, string authToken)
+        static async Task<GetUploadURLResponse> GetUploadURL(GetUploadURLRequest request, string apiUrl, string authToken)
         {
-
             var headers = GetAuthHeaders(authToken); 
-            string responseString = MakeRequest(apiUrl + "/b2api/v1/b2_get_upload_url", headers, JsonConvert.SerializeObject(request));
+            string responseString = await MakeRequest2(apiUrl + "/b2api/v1/b2_get_upload_url", headers, JsonConvert.SerializeObject(request));
             
-            return JsonConvert.DeserializeObject<GetUploadURLResponse>(responseString);
+            return await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<GetUploadURLResponse>(responseString));
         }
         static string getValidFilename(string input)
         {
@@ -225,10 +225,8 @@ namespace B2Uploader
             headers.Add(new Tuple<string, string>("X-Bz-File-Name", fileName));
             headers.Add(new Tuple<string, string>("X-Bz-Content-Sha1", sha1));
 
-            using (FileStream fs = System.IO.File.OpenRead(filePath))
-            {
 
-                string responseString = MakeRequest(uploadUrl, headers, fs, contentType);
+            string responseString = MakeRequest2(uploadUrl, headers, filePath, true, contentType).Result;
 
                 var resp = JsonConvert.DeserializeObject<UploadFileResponse>(responseString);
 
@@ -242,69 +240,42 @@ namespace B2Uploader
                     //something went wrong!
                     return null;
                 }
-            }
+            
         }
 
         static ListFileNamesResponse ListFileNames(ListFileNamesRequest request, string apiUrl, string authToken)
         {
             var headers = GetAuthHeaders(authToken);
-            string responseString =  MakeRequest(string.Format("{0}/b2api/v1/b2_list_file_names", apiUrl), headers, JsonConvert.SerializeObject(request));
+            string responseString =  MakeRequest2(string.Format("{0}/b2api/v1/b2_list_file_names", apiUrl), headers, JsonConvert.SerializeObject(request)).Result;
 
             return JsonConvert.DeserializeObject<ListFileNamesResponse>(responseString);
         }
 
-
-        static string MakeRequest(string url, List<Tuple<string,string>> headers, string data, string contentType = "application/json; charset=urf-8")
-        {
-            MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
-            return MakeRequest(url, headers, ms, contentType);
-        }
         
-        static string MakeRequest(string url, List<Tuple<string,string>> headers, Stream data, string contentType="application/json; charset=utf-8")
-        {
-            string reqId = DateTime.Now.Ticks.ToString("X2");
-            Stopwatch st = Stopwatch.StartNew();
-            try
+        static async Task<string> MakeRequest2(string url, List<Tuple<string, string>> headers, string data, bool isFile = false, string contentType = "application/json; charset=utf-8")
             {
+            var client = new HttpClient();
                 
-                logger.Debug("Starting RequestID: {0}", reqId);
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-
-                req.Method = "POST";
-
                 foreach (var head in headers)
                 {
-                    req.Headers.Add(head.Item1, head.Item2);
+                client.DefaultRequestHeaders.Add(head.Item1, head.Item2);
                 }
 
-                using (var stream = req.GetRequestStream())
+            HttpContent content = null;
+            if (isFile)
                 {
-                    
-                    data.Position = 0;
-
-                    req.ContentType = contentType;
-                    
-                    data.CopyTo(stream);
-                    data.Flush();
-                    
-                    stream.Close();
-                }
-                WebResponse response = (HttpWebResponse)req.GetResponse();
-                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                response.Close();
-                Console.WriteLine("RequId: {0} MakeRequest Took {1}ms",reqId, st.ElapsedMilliseconds);
-                return responseString;
+                content = new StreamContent(System.IO.File.OpenRead(data));
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
             }
-            catch (Exception ex)
+            else
             {
-                logger.Error("ReqId: {1} Error talking to server: {0}", ex.Message, reqId);
-                logger.Error("URL: {0}", url);
-                throw;
-            }
+                content = new StringContent(data);
         }
-
+            var resp = await client.PostAsync(url, content);
         
-        
+            resp.EnsureSuccessStatusCode();
+            return await resp.Content.ReadAsStringAsync();          
+        }
         
 
         private static string GetSha1(string fileName)
