@@ -1,1 +1,1 @@
-%SYSTEMROOT%\Microsoft.NET\Framework64\v4.0.30319\msbuild.exe /p:Configuration=Releasex64,OutputPath="%~dp0\bin\64"
+%SYSTEMROOT%\Microsoft.NET\Framework64\v4.0.30319\msbuild.exe /m /p:Configuration=Releasex64,OutputPath="%~dp0\bin\x64"

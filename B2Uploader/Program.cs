@@ -43,7 +43,8 @@ namespace B2Uploader
         static void Main(string[] args)
         {
             var result = CommandLine.Parser.Default.ParseArguments<CmdLineOptions>(args);
-                      
+
+            logger.Debug("Starting B2Uploader Version: {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
             var existCode = result.MapResult(options => {
                 if (!Directory.Exists(options.Directory))
@@ -52,6 +53,7 @@ namespace B2Uploader
                     return 0;
                 }
 
+                
                 if (options.Verbose)
                 {
                     logger.Debug("Authorizing User");
