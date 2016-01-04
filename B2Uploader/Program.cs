@@ -45,6 +45,8 @@ namespace B2Uploader
         {
             var result = CommandLine.Parser.Default.ParseArguments<CmdLineOptions>(args);                      
 
+            logger.Debug("Starting B2Uploader Version: {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+
             var existCode = result.MapResult(options => {
                 if (!Directory.Exists(options.Directory))
                 {
@@ -52,6 +54,7 @@ namespace B2Uploader
                     return 0;
                 }
 
+                
                 if (options.Verbose)
                 {
                     logger.Debug("Authorizing User");
@@ -277,9 +280,9 @@ namespace B2Uploader
             }
             var resp = await client.PostAsync(url, content);
             try {
-                resp.EnsureSuccessStatusCode();
-                return await resp.Content.ReadAsStringAsync();
-            }
+            resp.EnsureSuccessStatusCode();
+            return await resp.Content.ReadAsStringAsync();          
+        }
             catch(Exception ex)
             {
                 logger.Error("Error getting respoonse: {0} {1}", ex.Message, ex.StackTrace);

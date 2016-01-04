@@ -1,1 +1,1 @@
-%SYSTEMROOT%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe "%~dp0\B2Uploader.sln" /p:Configuration=Releasex86,OutputPath="%~dp0\bin\64"
+%SYSTEMROOT%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe /m "%~dp0\B2Uploader.sln" /p:Configuration=Releasex86,OutputPath="%~dp0\bin\x86"
