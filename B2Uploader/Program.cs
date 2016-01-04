@@ -134,8 +134,9 @@ namespace B2Uploader
                         while (!uploaded && retries < 3)
                         {
                             try {
-                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken).Result;
-                                var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
+                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
+                                Task.WaitAll(uploadURL);
+                                var response = UploadFile(uploadURL.Result.authorizationToken, "b2/x-auto", s, uploadURL.Result.uploadUrl);
                                 if(response != null)
                                 {
                                     uploaded = true;
@@ -143,7 +144,13 @@ namespace B2Uploader
                             }
                             catch(Exception ex)
                             {
-                                logger.Error("Uploaded Failed. Retrying");
+                                logger.Error("Uploaded Failed. {0}, Retrying",ex.Message);
+                                var innerEx = ex.InnerException;
+                                while(innerEx != null)
+                                {
+                                    logger.Error("Inner Ex: {0}", innerEx.Message);
+                                    innerEx = innerEx.InnerException;
+                                }
                                 logger.Error(ex.Message);
                                 uploaded = false;
                                 retries += 1;
@@ -269,9 +276,15 @@ namespace B2Uploader
                 content = new StringContent(data);
             }
             var resp = await client.PostAsync(url, content);
-            
-            resp.EnsureSuccessStatusCode();
-            return await resp.Content.ReadAsStringAsync();          
+            try {
+                resp.EnsureSuccessStatusCode();
+                return await resp.Content.ReadAsStringAsync();
+            }
+            catch(Exception ex)
+            {
+                logger.Error("Error getting respoonse: {0} {1}", ex.Message, ex.StackTrace);
+                throw;
+            }
         }
         
 
