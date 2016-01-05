@@ -1,5 +1,7 @@
 # b2uploader
 
+[![Join the chat at https://gitter.im/tiernano/b2uploader](https://badges.gitter.im/tiernano/b2uploader.svg)](https://gitter.im/tiernano/b2uploader?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Build Status](https://travis-ci.org/tiernano/b2uploader.svg?branch=master)](https://travis-ci.org/tiernano/b2uploader)
 ## What is it?
 
