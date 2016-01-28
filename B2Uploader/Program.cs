@@ -137,9 +137,10 @@ namespace B2Uploader
                         while (!uploaded && retries < 3)
                         {
                             try {
-                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken);
-                                Task.WaitAll(uploadURL);
-                                var response = UploadFile(uploadURL.Result.authorizationToken, "b2/x-auto", s, uploadURL.Result.uploadUrl);
+                                logger.Debug("Getting Upload URL");
+                                var uploadURL = GetUploadURL(new GetUploadURLRequest { bucketId = bucket.bucketId }, auth.apiUrl, auth.authorizationToken).Result;
+                                logger.Debug("Starting upload");
+                                var response = UploadFile(uploadURL.authorizationToken, "b2/x-auto", s, uploadURL.uploadUrl);
                                 if(response != null)
                                 {
                                     uploaded = true;
