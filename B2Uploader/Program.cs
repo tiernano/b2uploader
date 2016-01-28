@@ -213,6 +213,7 @@ namespace B2Uploader
         static string getValidFilename(string input)
         {
             string fileName = input.Replace('\\', '/');
+            fileName = fileName.Replace(' ', '_');
             if (fileName.StartsWith("/"))
             {
                 fileName = fileName.Substring(1);
