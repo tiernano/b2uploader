@@ -264,6 +264,10 @@ namespace B2Uploader
         static async Task<string> MakeRequest2(string url, List<Tuple<string, string>> headers, string data, bool isFile = false, string contentType = "application/json; charset=utf-8")
         {
             var client = new HttpClient();
+            if (isFile)
+            {
+                client.Timeout = TimeSpan.FromMinutes(60);
+            }
            
             foreach (var head in headers)
             {
