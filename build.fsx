@@ -14,6 +14,21 @@ let copyright = "TIernan OToole 2016"
 let productName = "B2 Uploader"
 let companyName = "Tiernan OToole"
 
+let buildMode = getBuildParamOrDefault "buildMode" "Releasex64"
+let setParams defaults =
+        { defaults with
+            Verbosity = Some(Quiet)
+            Targets = ["Build"]
+            Properties =
+                [
+                    "Optimize", "True"
+                    "DebugSymbols", "True"
+                    "Configuration", buildMode                    
+                ]
+         }
+
+
+
 Target "SetAssemblyInfo" (fun _  ->
 
     CreateCSharpAssemblyInfo "B2Classes/Properties/AssemblyInfo.cs"
@@ -46,13 +61,13 @@ Target "Clean" (fun _ ->
 
 Target "Classes" (fun _ ->
     !! @"B2Classes\B2Classes.csproj"
-        |> MSBuildRelease buildDir "Build"
+        |> MSBuildReleaseExt buildDir setParams.Properties "Build"
         |> Log "AppBuild-Output: "
 )
 
 Target "Uploader" (fun _ ->
     !! @"B2Uploader\B2Uploader.csproj"
-        |> MSBuildRelease buildDir "Build"
+        |> MSBuildReleaseExt buildDir setParams.Properties "Build"
         |> Log "AppBuild-Output: "
 )
 

@@ -7,10 +7,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProductAttribute("B2 Uploader")]
 [assembly: AssemblyCompanyAttribute("Tiernan OToole")]
 [assembly: AssemblyCopyrightAttribute("TIernan OToole 2016")]
-[assembly: AssemblyVersionAttribute("2016.2.1.866")]
-[assembly: AssemblyFileVersionAttribute("2016.2.1.866")]
+[assembly: AssemblyVersionAttribute("2016.2.1.927")]
+[assembly: AssemblyFileVersionAttribute("2016.2.1.927")]
 namespace System {
     internal static class AssemblyVersionInformation {
-        internal const string Version = "2016.2.1.866";
+        internal const string Version = "2016.2.1.927";
     }
 }
