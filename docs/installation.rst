@@ -2,6 +2,6 @@
 Installation
 ============
 
-Install the package with pip::
+To install, download the lastest release from below and run
 
-    $ pip install read-the-docs-template
+    https://github.com/tiernano/b2uploader/releases
